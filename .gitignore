@@ -1,0 +1,15 @@
+# .gitignore
+
+# Mac exclude
+.DS_Store
+/DerivedData
+/*/project.xcworkspace/
+/*/xcuserdata/
+*.xcuserstate
+
+# Windows VisualStudio
+.ipch/
+x64/
+.vs/
+.obj
+.exe
