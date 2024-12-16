@@ -3,7 +3,7 @@
 //
 // Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
-// http://home.comcast.net/~lang.dennis/
+// https://lanenlabs.com
 //
 // ----- License ----
 //
@@ -46,7 +46,7 @@ char sUsage[] =
     "\n"
     "NTFS Fast File Find " _VERSION " - " __DATE__ "\n"
     "By: Dennis Lang\n"
-    "https://home.comcast.net/~lang.dennis/\n"
+    "https://lanenlabs.com\n"
     "\n"
     "Description:\n"
     "   NTFSfastFind searches NTFS Master File Table (MFT) rather then iterating across directories.\n"

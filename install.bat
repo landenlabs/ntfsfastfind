@@ -32,6 +32,6 @@ copy x64\Release\%prog%.exe d:\opt\bin2\%prog%.exe
 
 @echo.
 @echo Compare md5 hash
-ld -a -ph %prog%-ms\x64\Release\%prog%.exe d:\opt\bin2\%prog%.exe
+ld -a -ph x64\Release\%prog%.exe d:\opt\bin2\%prog%.exe
 
 :_end

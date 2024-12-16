@@ -7,7 +7,7 @@
 //
 // Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
-// http://home.comcast.net/~lang.dennis/
+// https://lanenlabs.com
 //
 // ----- License ----
 //
