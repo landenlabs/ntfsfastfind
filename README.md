@@ -14,7 +14,7 @@ Help Banner:
 <pre>
 NTFS Fast File Find v3.00 - Dec 15 2024
 By: Dennis Lang
-https://home.comcast.net/~lang.dennis/
+https://landenlabs.com
 
 Description:
    NTFSfastFind searches NTFS Master File Table (MFT) rather then iterating across directories.
