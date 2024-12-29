@@ -40,7 +40,7 @@
 
 #include "GetOpts.h"
 
-#define _VERSION "v3.00"
+#define _VERSION "v3.01"
 
 char sUsage[] =
     "\n"

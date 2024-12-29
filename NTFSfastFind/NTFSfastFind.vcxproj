@@ -176,8 +176,12 @@
     <ClInclude Include="NtfsUtil.h" />
     <ClInclude Include="oNullStream.h" />
     <ClInclude Include="Pattern.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="SharePtr.h" />
     <ClInclude Include="StackWalker.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="NTFSfastFind.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,20 +1,26 @@
-#NTFSFastFind
+NTFSFastFind
+### NTFS Fast File Find
+
+
+### Builds
+* Windows/DOS  | Provided Visual Studio solution
+
+### Visit home website
+[https://landenlabs.com](https://landenlabs.com)
+
+### Description
 
 Windows only - Fast File Find using NTFS internal database
 
 Search for file names using simple patterns to scan the internal NTFS file database. 
 Much faster than using Explorer's find feature. 
 
-Visit home website
 
-[https://landenlabs.com](https://landenlabs.com)
-
-
-Help Banner:
+### Help Banner:
 <pre>
-NTFS Fast File Find v3.00 - Dec 15 2024
+NTFS Fast File Find v3.01 - Dec 28 2024
 By: Dennis Lang
-https://landenlabs.com
+https://lanenlabs.com
 
 Description:
    NTFSfastFind searches NTFS Master File Table (MFT) rather then iterating across directories.
@@ -26,12 +32,12 @@ Description:
    If you use the -z switch, it will iterate across the directories rather then using MFT.
 
 Use:
-   NTFSfastFind [options] <localNTFSdrivetoSearch>...
+   NTFSfastFind [options] &lt;localNTFSdrivetoSearch>...
  Filter:
-   -d <count>                        ; Filter by data stream count
-   -f <fileFilter>                   ; Filter by filename, use * or ? patterns
-   -s <size>                         ; Filter by file size
-   -t <relativeModifyDate>           ; Filter by time modified, value is relative days
+   -d &lt;count>                        ; Filter by data stream count
+   -f &lt;fileFilter>                   ; Filter by filename, use * or ? patterns
+   -s &lt;size>                         ; Filter by file size
+   -t &lt;relativeModifyDate>           ; Filter by time modified, value is relative days
    -z                                ; Force slow style directory search
  Report:
    -A[=s|h|r|d|c]                    ; Include attributes, filter on attributes
@@ -61,3 +67,5 @@ Use:
     -Q c:              ; Display special NTFS files
     -z c:\windows\system32\*.dll   ; Force slow directory search.
 </pre>
+
+[Top](#top)
