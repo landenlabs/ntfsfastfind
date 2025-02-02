@@ -2,7 +2,7 @@
 // Standard unix like argument parsing.
 //
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //
@@ -73,7 +73,7 @@ bool GetOpts<tchar>::GetOpt()
 		return false;   // Error.
 	}
 
-	if (*++pOptLetterList != ':') 
+	if (*++pOptLetterList != ':'|| (*m_argSeq != '\0' && *m_argSeq != '=')) 
     { 
         // Don't need argument 
 		m_optArg = NULL;

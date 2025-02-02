@@ -3,7 +3,7 @@
 //
 // Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //
@@ -34,6 +34,8 @@
 #ifdef _DEBUG
 #include <iostream>
 #include <iomanip>      // std::setw
+
+#include "Windows.h"
 #endif
 
 #define IOCTL_VOLUME_LOGICAL_TO_PHYSICAL \
@@ -57,8 +59,8 @@ DWORD FsUtil::GetDriveAndPartitionNumber(const wchar_t* volumeName, unsigned& ph
 {
     Hnd volumeHandle = CreateFile(
         volumeName,                     // "\\\\.\\C:";
-        GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ|FILE_SHARE_WRITE,
+        GENERIC_READ,
+        FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
         NULL,
         OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL,
@@ -67,13 +69,14 @@ DWORD FsUtil::GetDriveAndPartitionNumber(const wchar_t* volumeName, unsigned& ph
     if (!volumeHandle.IsValid())
         return GetLastError();
 
+    /*
     struct STORAGE_DEVICE_NUMBER 
     {
         DEVICE_TYPE DeviceType;
         ULONG       DeviceNumber;
         ULONG       PartitionNumber;
     };
-
+    */
     STORAGE_DEVICE_NUMBER storage_device_number;
     DWORD dwBytesReturned;
 
@@ -97,6 +100,22 @@ DWORD FsUtil::GetDriveAndPartitionNumber(const wchar_t* volumeName, unsigned& ph
     phyDrvNum = storage_device_number.DeviceNumber;
     partitionNum = storage_device_number.PartitionNumber - 1;   // appears to one based, so shift down one.
 
+    /*
+    VOLUME_DISK_EXTENTS vde;
+    if (!DeviceIoControl(volumeHandle,
+        IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
+        NULL, 0, &vde, sizeof(vde), &dwBytesReturned, NULL))
+    {
+        DWORD err = GetLastError();
+#ifdef _DEBUG
+        std::wcerr << err << " Failed GetDriveAndPartitionNumber CreateFile " << volumeName << std::endl;
+#endif
+        return err;
+    }
+    // Should be the same as phyDrvNum
+    std::wcerr << "Disk Number=" << vde.Extents->DiskNumber << std::endl;
+    */
+
     return ERROR_SUCCESS;
 }
 
@@ -107,8 +126,8 @@ DWORD FsUtil::GetNtfsDiskNumber(const wchar_t* volumeName, int& diskNumber, LONG
 {
     Hnd volumeHandle = CreateFile(
         volumeName,                     // "\\\\.\\C:";
-        GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ|FILE_SHARE_WRITE,
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         NULL,
         OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL,
@@ -180,8 +199,8 @@ DWORD FsUtil::GetDriveStartSector(const wchar_t* volumeName, DiskInfoList& diskI
 
     Hnd hDrive = CreateFile(
         volumeName,                         // "\\\\.\\C:";
-        GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         NULL,
         OPEN_EXISTING, 
         FILE_ATTRIBUTE_NORMAL,
@@ -214,8 +233,8 @@ DWORD FsUtil::GetDriveStartSector(const wchar_t* volumeName, DiskInfoList& diskI
     {
         DiskInfo diskInfo;
         ZeroMemory(&diskInfo, sizeof(diskInfo));
-        diskInfo.dwNTRelativeSector = volumeDiskExtents.Extents[0].StartingOffset.QuadPart / SECTOR_SIZE;
-        diskInfo.dwNumSectors = volumeDiskExtents.Extents[0].ExtentLength.QuadPart / SECTOR_SIZE;  
+        diskInfo.dwNTRelativeSector = (DWORD)(volumeDiskExtents.Extents[0].StartingOffset.QuadPart / SECTOR_SIZE);
+        diskInfo.dwNumSectors =  (DWORD)(volumeDiskExtents.Extents[0].ExtentLength.QuadPart / SECTOR_SIZE);  
         diskInfoList.push_back(diskInfo);
     }
     return ERROR_SUCCESS;

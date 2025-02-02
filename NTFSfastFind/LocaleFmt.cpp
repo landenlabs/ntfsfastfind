@@ -6,7 +6,7 @@
 //           http://www.codeproject.com/info/cpol10.aspx
 //
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //

@@ -7,7 +7,7 @@
 //
 // Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //
@@ -40,7 +40,7 @@ char* MFTRecord::sMFTRecordTypeStr[] =
     "0x00",
     "Standard Information",  //  0x10
     "Attribute List",        //  0x20
-    "File Name",             //  0x30
+    "File Names",            //  0x30
     "Volume Version",        //  0x40
     "Security Descriptor",   //  0x50
     "Volume Name",           //  0x60
@@ -299,7 +299,8 @@ int MFTRecord::ExtractFileOrMFT(
                     // NonResidence file data.
                     // Get actual 'data' size from this chunk of resident file data.
 		            LONGLONG realSize = pNtfsAttr->Attr.NonResident.n64RealSize;
-                    m_attrFilename.n64RealSize = realSize;
+                    m_attrFilename.n64DiskSize = pNtfsAttr->Attr.NonResident.n64AllocSize;
+                    m_attrFilename.n64FileSize = pNtfsAttr->Attr.NonResident.n64RealSize;
 
 			        if (m_fileOnDisk.empty())
                         ExtractDataPos(*pNtfsAttr, m_outFileData, maxSize, pMFTFilter);
@@ -356,10 +357,10 @@ int MFTRecord::ExtractFileOrMFT(
                 }
                 else
 	            {
-                    // Residence file data.
+                    // Residence file data. (pr os this the stream size
                     // Get actual 'data' size from this chunk of resident file data.
 		            LONGLONG realSize = pNtfsAttr->Attr.Resident.dwLength;
-                    m_attrFilename.n64RealSize = realSize;
+                    //xx m_attrFilename.n64DiskSize = realSize;
                 }
             }
 			break;
@@ -774,7 +775,7 @@ int MFTRecord::ReadRaw(LONGLONG n64LCN, Buffer& buffer, DWORD dwLen, const FsFil
                 Block mftBlock(pInTmp, m_dwMFTRecSize);
                 if (0 == mftRecord.ExtractFile(mftBlock, false, 0))
                 {
-                    if (pMFTFilter->IsMatch(mftRecord.m_attrStandard, mftRecord.m_attrFilename, &mftRecord))
+                    if (pMFTFilter->IsMatch(mftRecord.m_attrStandard, mftRecord.m_attrFilename, MatchInfo(& mftRecord)))
                     {
                         if (pInTmp != pOutTmp)
                             memcpy(pOutTmp, pInTmp, m_dwMFTRecSize);

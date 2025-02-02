@@ -77,6 +77,10 @@ public:
     int NextIdx() const
     { return m_optIdx; }
 
+    // Reverse to previous arg
+    int Back() 
+    {  return --m_optIdx; }
+
     const tchar* FindChr(const tchar* str, tchar chr)
     {
         while (*str && *str != chr)

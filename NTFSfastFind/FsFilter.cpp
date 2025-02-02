@@ -4,7 +4,7 @@
 //
 // Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //
@@ -76,16 +76,16 @@ bool IsName(const MFT_FILEINFO& aName, const std::wstring& name)
 
 bool IsSizeGreater(const MFT_FILEINFO& aName, LONGLONG size)
 {
-    return (aName.n64RealSize > size);
+    return (aName.n64DiskSize > size);
 }
 
 bool IsSizeEqual(const MFT_FILEINFO& aName, LONGLONG size)
 {
-    return (aName.n64RealSize == size);
+    return (aName.n64DiskSize == size);
 }
 
 bool IsSizeLess(const MFT_FILEINFO& aName, LONGLONG size)
 {
-    return (aName.n64RealSize < size);
+    return (aName.n64DiskSize < size);
 }
 

@@ -121,8 +121,8 @@ struct MFT_FILEINFO
 	LONGLONG	n64Modify;              // Last Modify time
 	LONGLONG	n64Modfil;              // Last modify of MFT record
 	LONGLONG	n64Access;              // Last Access time
-	LONGLONG	n64Allocated;           // Allocated disk space
-	LONGLONG	n64RealSize;            // Size of the file
+	LONGLONG	n64FileSize;            // Logical file size
+	LONGLONG	n64DiskSize;            // Disk space reserved for file
 	DWORD		dwFlags;				// attribute
 	DWORD		dwEAsReparsTag;			// Used by EAs and Reparse
 	BYTE		chFileNameLength;

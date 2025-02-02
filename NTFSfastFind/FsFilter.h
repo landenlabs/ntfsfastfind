@@ -38,6 +38,26 @@
 #include <string>
 #include <time.h>
 
+// --- Helper to manage optional information
+class MatchInfo {
+public:
+    const void* pMFTRecord; //  MFTRecord* (file and its attributes)
+    const void* pDirectory; //  NtfsUtil::FileInfo*  (directory)
+
+    MatchInfo(const void* _pMFTRecord)
+        : pMFTRecord(_pMFTRecord)
+        , pDirectory(NULL)
+    {
+    }
+    MatchInfo(const void* _pMFTRecord, const void* _pDirectory)
+        : pMFTRecord(NULL)
+        , pDirectory(_pDirectory)
+    {
+    }
+};
+
+
+
 // ------------------------------------------------------------------------------------------------
 // Example usage:
 //      MultiFilter mFilter;
@@ -47,7 +67,6 @@
 //      double days = -2;
 //      FILETIME  daysAgo = FsTime::TodayUTC() - FsTime::TimeSpan::Days(days);
 //      mFilter.List().push_back(new MatchDate(daysAgo));
-
 // ------------------------------------------------------------------------------------------------
 class Match
 {
@@ -56,8 +75,7 @@ public:
        m_matchOn(matchOn)
     { }
 
-    virtual bool IsMatch(const MFT_STANDARD & attr, const MFT_FILEINFO& name, const void* pData) = 0;
-
+    virtual bool IsMatch(const MFT_STANDARD& attr, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const = 0;
     bool m_matchOn;
 };
 
@@ -67,6 +85,8 @@ public:
 extern bool IsDateModifyGreater(const MFT_STANDARD &, const FILETIME& );
 extern bool IsDateModifyEqual(const MFT_STANDARD &, const FILETIME& );
 extern bool IsDateModifyLess(const MFT_STANDARD &, const FILETIME& );
+
+
 
 // ------------------------------------------------------------------------------------------------
 class MatchDate : public Match
@@ -78,7 +98,7 @@ public:
         m_fileTime(fileTime), m_test(test)
     { }
 
-    virtual bool IsMatch(const MFT_STANDARD & attr, const MFT_FILEINFO&, const void*)
+    virtual bool IsMatch(const MFT_STANDARD& attr, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const
     {
         return m_test(attr, m_fileTime) == m_matchOn;
     }
@@ -108,9 +128,9 @@ public:
     virtual ~MatchName()
     { }
 
-    virtual bool IsMatch(const MFT_STANDARD &, const MFT_FILEINFO& name, const void*)
+    virtual bool IsMatch(const MFT_STANDARD&, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const
     {
-        return ((name.chFileNameLength != 0) && m_test(name, m_name)) == m_matchOn;
+        return ((fileInfo.chFileNameLength != 0) && m_test(fileInfo, m_name)) == m_matchOn;
     }
 
     std::wstring m_name;
@@ -138,9 +158,9 @@ public:
         m_size(size), m_test(test) 
     { }
 
-    virtual bool IsMatch(const MFT_STANDARD &, const MFT_FILEINFO& name, const void*)
+    virtual bool IsMatch(const MFT_STANDARD&, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const
     {
-        return m_test(name, m_size) == m_matchOn;
+        return m_test(fileInfo, m_size) == m_matchOn;
     }
 
     LONGLONG     m_size;
@@ -149,11 +169,27 @@ public:
 
 
 // ------------------------------------------------------------------------------------------------
-class FsFilter
+class FsFilter : public Match
 {
 public:
-    virtual bool IsMatch(const MFT_STANDARD &, const MFT_FILEINFO&, const void* pData) const = 0;
+    typedef std::vector<SharePtr<Match>> MatchList;
+
+    FsFilter() : Match(true)  { }
+    // virtual bool IsMatch(const MFT_STANDARD& attr, const MFT_FILEINFO& fileInfo, const MatchInfo& pData) const = 0;
     virtual bool IsValid() const = 0;
+
+    void SetMatch(const MatchList& matchList)
+    {
+        m_testList = matchList;
+    }
+
+    MatchList& List()
+    {
+        return m_testList;
+    }
+    
+protected:
+    MatchList m_testList;
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -193,9 +229,9 @@ public:
     void SetMatch(SharePtr<Match>& rMatch)
     { m_rMatch = rMatch; }
 
-    virtual bool IsMatch(const MFT_STANDARD & attr, const MFT_FILEINFO& name, const void* pData) const
+    virtual bool IsMatch(const MFT_STANDARD& attr, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const
     {
-        return m_rMatch->IsMatch(attr, name, pData);
+        return m_rMatch->IsMatch(attr, fileInfo, matchInfo);
     }
 
     virtual bool IsValid() const
@@ -203,41 +239,37 @@ public:
 
 private:
     SharePtr<Match> m_rMatch;
+
 };
 
 // ------------------------------------------------------------------------------------------------
-//  Multiple filter rules
+//  Multiple filter rules and all must be true to pass. 
 //  Ex:
 //      MultiFilter mFilter;
 //      mFilter.List().push_back(new MatchName(L"foo"));
 //      mFilter.List().push_back(new MatchName(L"*.txt", IsNameIcase, false));  // reverse match
 //      mFilter.List().push_back(new MatchDate(Today, IsDateModifyGreater);
 //
-class MultiFilter : public FsFilter
+class AndFilter : public FsFilter
 {
 public:
-    typedef std::vector<SharePtr<Match>> MatchList;
 
-    MultiFilter() 
+    AndFilter() 
     { }
 
-    MultiFilter(const MatchList& matchList) : m_testList(matchList) 
+    AndFilter(const MatchList& matchList)
+    {
+        m_testList = matchList;
+    }
+
+    virtual ~AndFilter()
     { }
 
-    virtual ~MultiFilter()
-    { }
-
-    void SetMatch(const MatchList& matchList)
-    { m_testList = matchList; }
-
-    MatchList& List()
-    { return m_testList; }
-   
-    virtual bool IsMatch(const MFT_STANDARD & attr, const MFT_FILEINFO& name, const void* pData) const
+    virtual bool IsMatch(const MFT_STANDARD& attr, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const
     {
         for (unsigned mIdx = 0; mIdx < m_testList.size(); mIdx++)
         {
-            if (!m_testList[mIdx]->IsMatch(attr, name, pData))
+            if (!m_testList[mIdx]->IsMatch(attr, fileInfo, matchInfo))
                 return false;
         }
         return true;
@@ -246,8 +278,34 @@ public:
     virtual bool IsValid() const
     { return m_testList.size() != 0; }
 
-private:
-    MatchList  m_testList;
 };
 
+// ------------------------------------------------------------------------------------------------
+//  Multiple filter rules and any true to pass.
+class AnyFilter : public FsFilter {
+public:
+
+    AnyFilter()
+    { }
+
+    AnyFilter(const MatchList& matchList)
+    {
+        m_testList = matchList;
+    }
+
+    virtual ~AnyFilter()
+    { }
+
+    virtual bool IsMatch(const MFT_STANDARD& attr, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const
+    {
+        for (unsigned mIdx = 0; mIdx < m_testList.size(); mIdx++) {
+            if (m_testList[mIdx]->IsMatch(attr, fileInfo, matchInfo))
+                return true;
+        }
+        return false;
+    }
+
+    virtual bool IsValid() const
+    {  return m_testList.size() != 0;  }
+};
 
