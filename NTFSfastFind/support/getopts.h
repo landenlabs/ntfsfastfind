@@ -36,7 +36,7 @@ public:
     // Pass in argc and argv from main()
     // optStr is optional switches
     //      "bd:eg:h"
-    // colon indicates those switch letter which tag an argument
+    // Colon indicates those switch letter which have an argument.
     //   -b  -d foo -e -g bar -h
     GetOpts(int argc,  const tchar* argv[], const tchar* optStr) :
         m_argc(argc),
@@ -72,6 +72,10 @@ public:
     // Return option's argument value.
     const tchar* OptArg() const
     { return m_optArg; }
+
+    // Call decided they don't want the argument. Backup index.
+    void NotOurArg()
+    { if (m_optIdx != 0) m_optIdx--; }
 
     // Return next index after last processed by GetOpt();
     int NextIdx() const

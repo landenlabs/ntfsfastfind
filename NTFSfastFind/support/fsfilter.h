@@ -1,7 +1,6 @@
 // ------------------------------------------------------------------------------------------------
-// FileSystem filter classes used to limit output of file system scan.
+// Filter classes used to limit output of file system scan.
 //
-// Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
 // https://lanenlabs.com
 //
@@ -37,6 +36,7 @@
 
 #include <string>
 #include <time.h>
+#include <regex>
 
 // ------------------------------------------------------------------------------------------------
 // Example usage:

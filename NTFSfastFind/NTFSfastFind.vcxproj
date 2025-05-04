@@ -71,16 +71,20 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir)support;$(ProjectDir)ntfs</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir)support;$(ProjectDir)ntfs</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir)support;$(ProjectDir)ntfs</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
+    <IncludePath>$(ProjectDir)support;$(ProjectDir)ntfs</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -152,33 +156,37 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="NTFSfastFind.cpp" />
-    <ClCompile Include="FsFilter.cpp" />
-    <ClCompile Include="FsTime.cpp" />
-    <ClCompile Include="FsUtil.cpp" />
-    <ClCompile Include="GetOpts.cpp" />
-    <ClCompile Include="LocaleFmt.cpp" />
-    <ClCompile Include="MFTRecord.cpp" />
-    <ClCompile Include="NtfsUtil.cpp" />
-    <ClCompile Include="Pattern.cpp" />
-    <ClCompile Include="StackWalker.cpp" />
+    <ClCompile Include="ntfs\mftrecord.cpp" />
+    <ClCompile Include="ntfs\ntfsutil.cpp" />
+    <ClCompile Include="support\dosslowfind.cpp" />
+    <ClCompile Include="Support\FsFilter.cpp" />
+    <ClCompile Include="Support\FsTime.cpp" />
+    <ClCompile Include="Support\FsUtil.cpp" />
+    <ClCompile Include="Support\GetOpts.cpp" />
+    <ClCompile Include="Support\LocaleFmt.cpp" />
+    <ClCompile Include="Support\Pattern.cpp" />
+    <ClCompile Include="Support\StackWalker.cpp" />
+    <ClCompile Include="support\WinErrHandlers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseTypes.h" />
-    <ClInclude Include="Block.h" />
-    <ClInclude Include="FsFilter.h" />
-    <ClInclude Include="FsTime.h" />
-    <ClInclude Include="FsUtil.h" />
-    <ClInclude Include="GetOpts.h" />
-    <ClInclude Include="Hnd.h" />
-    <ClInclude Include="LocaleFmt.h" />
-    <ClInclude Include="MFTRecord.h" />
-    <ClInclude Include="NtfsTypes.h" />
-    <ClInclude Include="NtfsUtil.h" />
-    <ClInclude Include="oNullStream.h" />
-    <ClInclude Include="Pattern.h" />
+    <ClInclude Include="ntfs\mftrecord.h" />
+    <ClInclude Include="ntfs\ntfstypes.h" />
+    <ClInclude Include="ntfs\ntfsutil.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="SharePtr.h" />
-    <ClInclude Include="StackWalker.h" />
+    <ClInclude Include="Support\BaseTypes.h" />
+    <ClInclude Include="Support\Block.h" />
+    <ClInclude Include="support\dosslowfind.h" />
+    <ClInclude Include="Support\FsFilter.h" />
+    <ClInclude Include="Support\FsTime.h" />
+    <ClInclude Include="Support\FsUtil.h" />
+    <ClInclude Include="Support\GetOpts.h" />
+    <ClInclude Include="Support\Hnd.h" />
+    <ClInclude Include="Support\LocaleFmt.h" />
+    <ClInclude Include="Support\oNullStream.h" />
+    <ClInclude Include="Support\Pattern.h" />
+    <ClInclude Include="Support\SharePtr.h" />
+    <ClInclude Include="Support\StackWalker.h" />
+    <ClInclude Include="support\WinErrHandlers.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="NTFSfastFind.rc" />

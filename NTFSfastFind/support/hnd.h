@@ -1,7 +1,6 @@
 // ------------------------------------------------------------------------------------------------
 // Smart file handle class. Close when it goes out of scope.
 //
-// Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
 // https://lanenlabs.com
 //
@@ -80,6 +79,9 @@ public:
     { return m_handle != INVALID_HANDLE_VALUE; }
 
     operator HANDLE& ()
+    {  return m_handle; }
+
+    operator HANDLE () const
     {  return m_handle; }
 
     HANDLE m_handle;

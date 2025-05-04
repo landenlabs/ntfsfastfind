@@ -29,18 +29,21 @@
 // ------------------------------------------------------------------------------------------------
 
 #include <iostream>
-#include <sys/stat.h>
-#include <math.h>
+// #include <sys/stat.h>
+// #include <math.h>
 
-#include "BaseTypes.h"
+#include "baseTypes.h"
+#include "winerrhandlers.h"
+using namespace WinErrHandlers;
 
-#include "FsUtil.h"
-#include "FsFilter.h"
-#include "NtfsUtil.h"
+#include "getopts.h"
+#include "fsfilter.h"
 
-#include "GetOpts.h"
+#include "fsutil.h"
+#include "ntfsutil.h"
+#include "dosslowfind.h"
 
-#define _VERSION "v3.01"
+#define _VERSION "v3.02"
 
 char sUsage[] =
     "\n"
@@ -94,78 +97,7 @@ char sUsage[] =
     "    -z c:\\windows\\system32\\*.dll   ; Force slow directory search. \n"
     ;
 
-// ------------------------------------------------------------------------------------------------
-// Convert error number to semi-readable string.
-std::wstring ErrorMsg(DWORD error)
-{
-	wchar_t *lpMsgBuf;
 
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
-        NULL,
-        error,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, 
-        NULL);
-
-    std::wstring msg(lpMsgBuf);
-	LocalFree(lpMsgBuf);
-    return msg;
-}
-
-
-#include "stackwalker.h"
-
-// Specialized stackwalker-output classes
-// Console (printf):
-class StackWalkerToConsole : public StackWalker
-{
-protected:
-    virtual void OnOutput(LPCSTR szText) { printf("%s", szText); }
-};
-
-static wchar_t s_szExceptionLogFileName[_MAX_PATH] = L"\\exceptions.log"; // default
-static bool  s_bUnhandledExeptionFilterSet = FALSE;
-static long __stdcall CrashHandlerExceptionFilter(EXCEPTION_POINTERS* pExPtrs)
-{
-    StackWalkerToConsole sw; // output to console
-    sw.ShowCallstack(GetCurrentThread(), pExPtrs->ContextRecord);
-#if 0
-    wchar_t lString[500];
-    wsprintf(lString,
-        L"*** Unhandled Exception! See console output for more infos!\n"
-        L"   ExpCode: 0x%8.8X\n"
-        L"   ExpFlags: %d\n"
-#if _MSC_VER >= 1900
-        L"   ExpAddress: 0x%8.8p\n"
-#else
-        L"   ExpAddress: 0x%8.8X\n"
-#endif
-        L"   Please report!",
-        pExPtrs->ExceptionRecord->ExceptionCode, pExPtrs->ExceptionRecord->ExceptionFlags,
-        pExPtrs->ExceptionRecord->ExceptionAddress);
-    FatalAppExit(-1, lString);
-#else
-    FatalAppExit(-1, NULL);
-#endif
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
-static void InitUnhandledExceptionFilter()
-{
-    wchar_t szModName[_MAX_PATH];
-    if (GetModuleFileName(NULL, szModName, sizeof(szModName) / sizeof(TCHAR)) != 0)
-    {
-        wcscpy_s(s_szExceptionLogFileName, szModName);
-        wcscat_s(s_szExceptionLogFileName, L".exp.log");
-    }
-    if (s_bUnhandledExeptionFilterSet == FALSE)
-    {
-        // set global exception handler (for handling all unhandled exceptions)
-        SetUnhandledExceptionFilter(CrashHandlerExceptionFilter);
-        s_bUnhandledExeptionFilterSet = TRUE;
-    }
-}
 
 // ------------------------------------------------------------------------------------------------
 int NTFSfastFind(
@@ -183,8 +115,6 @@ int NTFSfastFind(
     volumePath[4] = towupper(driveLetter);
     reportCfg.volume = volumePath+4;
     FsUtil::DiskInfoList diskInfoList;
-
-    InitUnhandledExceptionFilter();
 
   
     error = FsUtil::GetDriveAndPartitionNumber(volumePath, phyDrvNum, partitionNum);
@@ -253,112 +183,6 @@ int NTFSfastFind(
 }
 
 // ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// Scan file system using Directory API, which is slower than using NTFS but can be
-// faster if limited to a subdirectory.
-class DirSlowFind
-{
-public:
-    DirSlowFind(NtfsUtil::ReportCfg& reportCfg, std::wostream& wout) :
-        m_reportCfg(reportCfg),
-        m_wout(wout),
-        m_error(0)
-    {
-    }
-
-    void ScanFiles();
-    void ScanFiles(const wchar_t* path)
-    {
-        wcscpy_s(m_path, ARRAYSIZE(m_path), path);
-        wchar_t* pSlash = wcsrchr(m_path, '\\');
-        if (pSlash)
-            *pSlash = '\0';
-        ScanFiles();
-    }
-
-    NtfsUtil::ReportCfg& m_reportCfg;
-    std::wostream&       m_wout;
-    int                  m_error;
-
-    // Dummy objects so we can call filters in ReportCfg.
-    MFTRecord            m_mftRecord;
-    NtfsUtil::FileInfo   m_fileInfo;
-
-    wchar_t              m_path[MAX_PATH];
-};
-
-// ------------------------------------------------------------------------------------------------
-void DirSlowFind::ScanFiles()
-{
-    WIN32_FIND_DATA FileData;    // Data structure describes the file found
-    HANDLE     hSearch;          // Search handle returned by FindFirstFile
-
-    m_fileInfo.directory = m_path+2;
-
-    size_t dirLen = wcslen(m_path);
-    wcscpy_s(m_path + dirLen, ARRAYSIZE(m_path) - dirLen, L"\\*");
-    dirLen++;
-
-    // Start searching for folder (directories), starting with srcdir directory.
-
-    hSearch = FindFirstFile(m_path, &FileData);
-    if (hSearch == INVALID_HANDLE_VALUE)
-    {
-        std::wcerr << "Error " << ErrorMsg(GetLastError()) 
-            << "\nFailed to open directory " << m_path << std::endl;
-        m_error = GetLastError();
-        return;
-    }
-
-    bool isMore = true;
-    while (isMore)
-    {
-        if ((FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
-        {
-            if (FileData.cFileName[0] != L'.' || isalnum(FileData.cFileName[1]))
-            {
-                wcscpy_s(m_path + dirLen, ARRAYSIZE(m_path) - dirLen, FileData.cFileName);
-                ScanFiles();
-                m_path[dirLen-1] = L'\0';
-                m_fileInfo.directory = m_path+2;
-                m_path[dirLen-1] = L'\\';
-                m_path[dirLen] = L'\0';
-            }
-        }
-        else
-        {
-            if (m_reportCfg.postFilter->IsMatch(
-                    m_mftRecord.m_attrStandard, m_mftRecord.m_attrFilename, &m_fileInfo))
-            {
-                wcscpy_s(m_mftRecord.m_attrFilename.wFilename, 
-                        ARRAYSIZE(m_mftRecord.m_attrFilename.wFilename),
-                        FileData.cFileName);
-
-                m_mftRecord.m_attrFilename.chFileNameLength = (BYTE)wcslen(FileData.cFileName);
-                m_mftRecord.m_attrFilename.n64Modify =
-                    m_mftRecord.m_attrStandard.n64Modify = *(LONGLONG*)&FileData.ftLastWriteTime;
-
-                LARGE_INTEGER fileSize;
-                fileSize.HighPart = FileData.nFileSizeHigh;
-                fileSize.LowPart = FileData.nFileSizeLow;
-                m_mftRecord.m_attrFilename.n64RealSize = fileSize.QuadPart;
-                    
-                if (m_reportCfg.readFilter->IsMatch(
-                    m_mftRecord.m_attrStandard, m_mftRecord.m_attrFilename, &m_fileInfo))
-                {
-                    m_wout << m_path << "\\" <<  FileData.cFileName << std::endl;        
-                }
-            }
-        }
-
-        isMore = (FindNextFile(hSearch, &FileData) != 0) ? true : false;
-    }
-
-    // Close directory before calling callback incase client wants to delete dir.
-    FindClose(hSearch);
-}
-
-// ------------------------------------------------------------------------------------------------
 void AddFileFilter(const wchar_t* argv, NtfsUtil::ReportCfg& reportCfg, bool matchOn)
 {
     const wchar_t* pName = wcsrchr(argv, reportCfg.slash);
@@ -391,6 +215,7 @@ int wmain(int argc, const wchar_t* argv[])
         return 0;
     }
 
+    WinErrHandlers::InitUnhandledExceptionFilter();
     GetOpts<wchar_t> getOpts(argc, argv, L"!#A:DIQSTVd:f:s:t:z?");
 
     while (getOpts.GetOpt())

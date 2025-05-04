@@ -1,10 +1,9 @@
 // ------------------------------------------------------------------------------------------------
-// Simple pattern matching class.
+// Base types used by project.
 //
-// Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
 // https://lanenlabs.com
-//
+// 
 // ----- License ----
 //
 // Copyright (c) 2014 Dennis Lang
@@ -28,42 +27,36 @@
 //
 // ------------------------------------------------------------------------------------------------
 
-
 #pragma once
 
-#include <windows.h>
-#include <vector>
-#include <ctype.h>
+#include <Windows.h>
 
-class Pattern
+#include "Hnd.h"
+#include "Block.h"
+#include "SharePtr.h"
+
+#include <vector>
+
+class Buffer : public std::vector<BYTE>
 {
 public:
-    /// Compare simple pattern against string.
-    /// Patterns supported:
-    ///          ?        ; any single character
-    ///          *        ; zero or more characters
-    static bool CompareCase(const wchar_t* pattern, const wchar_t* str)
+    // data() is part of new STL available in VS2010.
+    // Emulate with Data() method.
+    // Return inernal pointer to beginning of active region or reserved memory.
+    BYTE* Data() 
+    {  return data();  }
+
+    // Return subregion of buffer. 
+    // Note - this is expensive, it creates a copy of the region.
+    Buffer Region(size_t off, size_t len)
     {
-        // ToDo - make case comparison an argument to Compare.
-        return Compare(pattern, 0, str, 0);
+        if (off + len > size())
+            throw off;
+
+        Buffer region;
+        region.resize(len);
+        memcpy(&region[0], Data() + off, len);
+        return region;
     }
-
-    /// Compare simple pattern against string.
-    /// Patterns supported:
-    ///          ?        ; any single character
-    ///          *        ; zero or more characters
-    static bool CompareNoCase(const wchar_t* pattern, const wchar_t* str)
-    {
-        // ToDo - make case comparison an argument to Compare.
-        return Compare(pattern, 0, str, 0);
-    }
-
-    // Text comparison functions.
-    static bool YCaseChrCmp(wchar_t c1, wchar_t c2) { return c1 == c2; }
-    static bool NCaseChrCmp(wchar_t c1, wchar_t c2) { return tolower(c1) == tolower(c2); }
-
-private:
-    static bool (*ChrCmp)(wchar_t c1, wchar_t c2);
-    static bool Compare(const wchar_t* wildStr, int wildOff, const wchar_t* rawStr, int rawOff);
 };
 

@@ -1,7 +1,6 @@
 // ------------------------------------------------------------------------------------------------
 // Simple pattern matching class.
 //
-// Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
 // https://lanenlabs.com
 //
@@ -47,7 +46,7 @@ bool Pattern::Compare(const wchar_t* wildStr, int wildOff, const wchar_t* rawStr
     while (wildStr[wildOff])
     {
         if (rawStr[rawOff] == EOS)
-            return (wcscmp(wildStr+wildOff, L"*") == 0);
+            return (wildStr[wildOff] == L'*');
 
         if (wildStr[wildOff] == L'*')
         {
@@ -68,7 +67,7 @@ bool Pattern::Compare(const wchar_t* wildStr, int wildOff, const wchar_t* rawStr
             } while (rawStr[rawOff]);
 
             if (rawStr[rawOff] == EOS)
-                return (wcscmp(wildStr+wildOff+1,  L"*") == 0);
+                return (wildStr[wildOff+1] == L'*');
         }
         else if (wildStr[wildOff] == L'?')
         {

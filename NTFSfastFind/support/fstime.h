@@ -1,7 +1,6 @@
 // ------------------------------------------------------------------------------------------------
 // FileSystem Time class used to manipulate time.
 //
-// Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
 // https://lanenlabs.com
 //

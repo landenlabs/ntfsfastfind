@@ -2,7 +2,6 @@
 // FileSystem filter classes used to limit output of file system scan by filtering on 
 // name, date or size.
 //
-// Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
 // https://lanenlabs.com
 //
