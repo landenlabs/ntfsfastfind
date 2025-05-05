@@ -55,15 +55,18 @@ public:
     struct ReportCfg
     {
         ReportCfg() : 
-            queryInfo(false),
-            mftIndex(false), modifyTime(false), size(false), 
-            attribute(false), directory(true), name(true),
-            nameCnt(false), streamCnt(false), showVcn(false),
-            showDetail(false),
+            queryInfo(false), mftIndex(false)
+            , modifyTime(false)
+            , diskSize(false), fileSize(false)
+            , attribute(false), directory(true), name(true)
+            , nameCnt(false), streamCnt(false), showVcn(false), 
+
+            showDetail(false), deleted(false),
+
             attributes((DWORD)-1),
             slash('\\'), separator(L" "), volume(L""),
-            readFilter(new MultiFilter()),
-            postFilter(new MultiFilter())
+            readFilter(new AndFilter()),
+            postFilter(new AnyFilter())
         { }
 
         // Special mode
@@ -72,7 +75,8 @@ public:
         // File scan report columns
         bool        mftIndex;
         bool        modifyTime;        // include modify time
-        bool        size;
+        bool        diskSize;
+        bool        fileSize;
         bool        attribute;
         bool        directory;         // include full directory path
         bool        directoryFilter;   // load directory so it can filtered.
@@ -83,6 +87,7 @@ public:
         bool        showVcn;           // show VCN array StartVcn#Vcn...
 
         bool        showDetail;        // When in 'Q' mode show all MFT record details.
+        bool        deleted;           // Must be deleted 
 
         DWORD       attributes;        // Limit output to items with these attributes
 
@@ -91,10 +96,10 @@ public:
         wchar_t*    separator;
         wchar_t*    volume;
 
-        SharePtr<MultiFilter> readFilter;         // Filter while reading MFT.
-        SharePtr<MultiFilter> postFilter;         // Filter while presenting results (directory filter).
+        SharePtr<FsFilter> readFilter; // Filter while reading MFT.
+        SharePtr<FsFilter> postFilter; // Filter while presenting results (directory filter).
 
-        std::stack<SharePtr<MultiFilter>> stackFilter;
+        std::stack<SharePtr<FsFilter>> stackFilter;
         void PushFilter()
         {
             stackFilter.push(readFilter);
@@ -109,13 +114,16 @@ public:
     };
 
     DWORD ScanFiles(
+        const wchar_t* volume, 
         const wchar_t* phyDrv,          // path to physcal drive to scan, ex: \\.\Physical0
         const DiskInfo& drive,          // drive/partition info which has offset to MFT
         const ReportCfg& reportCfg,     // Report configuration
         std::wostream& wout,            // Wide Output stream 
-        StreamFilter* pStreamFilter);
+        StreamFilter* pStreamFilter,
+        DWORD maxFiles);                // -1 for all matching files
 
     DWORD QueryMFT(
+        const wchar_t* volume, 
         const wchar_t* phyDrv,          // path to physcal drive to scan, ex: \\.\Physical0
         const DiskInfo& drive,          // drive/partition info which has offset to MFT
         const ReportCfg& reportCfg,     // Report configuration
@@ -128,8 +136,15 @@ public:
 		LONGLONG	 n64Modify;		// Last Modify time
 		LONGLONG	 n64Modfil;		// Last modify of MFT record
 		LONGLONG	 n64Access;		// Last Access time
-		LONGLONG	 n64Size;		// Actual size of file.
-		DWORD		 dwAttributes;	// File attribute
+		LONGLONG	 diskSize;		// Actual size of file on disk
+		LONGLONG	 fileSize;		// Logical size of file
+		DWORD		 dwAttributes;	// File attribute 
+        // https://learn.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants
+        //   1 = Ronly, 2 = Hidden, 4 = Sys, 16 = dir, 
+        // 32 = arch, 64 = dev, 128 = norm, 256 = temp, 
+        // 512 = sparse, 1024 = reparse, 
+        // 2048 = compress, 4096 = offline
+
 		bool 		 bDeleted;		// True when deleted
         bool         bSparse;       // True if sparse file
 		std::wstring filename;      // File name
@@ -146,7 +161,7 @@ public:
 	};
 
     // Filter selection, return 0 on success, else last error.
-    int GetSelectedFile(DWORD nFileSeq, const SharePtr<MultiFilter>& filter, FileInfo& fileInfo, 
+    int GetSelectedFile(DWORD nFileSeq, const SharePtr<FsFilter>& filter, FileInfo& fileInfo, 
         bool dir=false, StreamFilter* pStreamFilter=NULL);
 
     int GetDirectory(std::wstring& directory, LONGLONG mftIndex);
@@ -184,9 +199,9 @@ protected:
     // Physical drive info 
 	Hnd	    m_hDrive;
 	bool    m_bInitialized;
-	DWORD   m_dwStartSector;        // Starting location of MFT
-	DWORD   m_dwBytesPerCluster;
-	DWORD   m_dwBytesPerSector;
+	DWORD   m_startSector;          // Starting location of MFT
+	DWORD   m_bytesPerCluster;      // = bytersPerSector * sectorsPerCluster
+	DWORD   m_bytesPerSector;
  
     // MFT info  
 	Buffer      m_copyOfMFT;        // In memory copy of MFT, optionally trimmed by filter.
@@ -209,7 +224,7 @@ protected:
 // ------------------------------------------------------------------------------------------------
 // Custom filter to count MFT records by inUse state
 // ------------------------------------------------------------------------------------------------
-class CountFilter : public MultiFilter /* FsFilter */
+class CountFilter : public AndFilter /* FsFilter */
 {
 public:
     CountFilter()  
@@ -218,7 +233,7 @@ public:
     virtual ~CountFilter()  
     { }
 
-    virtual bool IsMatch(const MFT_STANDARD & attr, const MFT_FILEINFO& name, const void* pData) const;
+    virtual bool IsMatch(const MFT_STANDARD & attr, const MFT_FILEINFO& fileInfo, const MatchInfo& matchInfo) const;
  
     virtual bool IsValid() const
     { return true; }
@@ -227,7 +242,7 @@ public:
     {
         CountInfo() :
             m_fileCnt(0), m_dirCnt(0),
-            m_realSize(0), m_allocSize(0)
+            m_diskSize(0), m_fileSize(0)
         {
             ZeroMemory(m_attrCnt, sizeof(m_attrCnt));
             ZeroMemory(m_nameTypeCnt, sizeof(m_nameTypeCnt));
@@ -238,8 +253,8 @@ public:
         DWORD       m_attrCnt[15];          // 1=Ronly, 2=hidden, 4=System
         DWORD       m_fileCnt;
         DWORD       m_dirCnt;
-        LONGLONG    m_realSize;
-        LONGLONG    m_allocSize;
+        LONGLONG    m_diskSize;
+        LONGLONG    m_fileSize;
 
         // chFileNameType  ePOSIX=0,eUnicode=1,eDOS= 2,eBoth=3
         DWORD       m_nameTypeCnt[7];
@@ -276,9 +291,9 @@ public:
         m_size(size), m_test(test) 
     { }
 
-    virtual bool IsMatch(const MFT_STANDARD &, const MFT_FILEINFO&, const void* pData)
+    virtual bool IsMatch(const MFT_STANDARD &, const MFT_FILEINFO&, const MatchInfo& matchInfo) const
     {
-        const MFTRecord* pMFTRecord = (const MFTRecord*)pData;
+        const MFTRecord* pMFTRecord = (const MFTRecord*)matchInfo.pMFTRecord;
         return m_test(pMFTRecord->m_streamCnt, m_size) == m_matchOn;
     }
 
@@ -306,10 +321,10 @@ public:
     virtual ~MatchDirectory()
     { }
 
-    virtual bool IsMatch(const MFT_STANDARD &, const MFT_FILEINFO&, const void* pData)
+    virtual bool IsMatch(const MFT_STANDARD &, const MFT_FILEINFO&, const MatchInfo& matchInfo) const
     {
-        const NtfsUtil::FileInfo* pFileInfo= (const NtfsUtil::FileInfo*)pData;
-        return Pattern::CompareNoCase(m_dirPat.c_str(), pFileInfo->directory.c_str())  == m_matchOn;
+        const NtfsUtil::FileInfo* pFileInfo = (const NtfsUtil::FileInfo*)matchInfo.pDirectory;
+        return (pFileInfo == NULL) || Pattern::CompareNoCase(m_dirPat.c_str(), pFileInfo->directory.c_str()) == m_matchOn;
     }
 
     std::wstring m_dirPat;
