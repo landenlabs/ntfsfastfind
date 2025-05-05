@@ -2,7 +2,7 @@
 // Standard unix like argument parsing.
 //
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com                              
+// https://landenlabs.com                              
 //
 // ----- License ----
 //

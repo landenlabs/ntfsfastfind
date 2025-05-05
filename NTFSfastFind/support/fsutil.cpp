@@ -195,8 +195,6 @@ DWORD FsUtil::GetNtfsDiskNumber(const wchar_t* volumeName, int& diskNumber, LONG
 
 DWORD FsUtil::GetDriveStartSector(const wchar_t* volumeName, DiskInfoList& diskInfoList)
 {
-    int patIdx, nRet;
-
     Hnd hDrive = CreateFile(
         volumeName,                         // "\\\\.\\C:";
         GENERIC_READ,

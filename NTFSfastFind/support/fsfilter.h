@@ -1,8 +1,8 @@
 // ------------------------------------------------------------------------------------------------
-// Filter classes used to limit output of file system scan.
+// FileSystem filter classes used to limit output of file system scan.
 //
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //

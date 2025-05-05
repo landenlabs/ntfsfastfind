@@ -805,7 +805,7 @@ DWORD NtfsUtil::ScanFiles(
             if (reportCfg.attribute) {
                 // TODO - show hardlink count. 
                 // int nlinks = getHardLinks(stFInfo.directory + m_slash + stFInfo.filename);
-                _snwprintf(numStr, ARRAYSIZE(numStr), L"~~%3d", (unsigned)stFInfo.streamCnt);
+                _snwprintf_s(numStr, ARRAYSIZE(numStr), L"~~%3d", (unsigned)stFInfo.streamCnt);
                 wout
                     << ((eDirectory & stFInfo.dwAttributes) != 0 ? L" Dir " : (stFInfo.streamCnt > 1 ? numStr : L"     "))
                     << separator

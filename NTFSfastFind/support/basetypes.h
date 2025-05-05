@@ -2,7 +2,7 @@
 // Base types used by project.
 //
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 // 
 // ----- License ----
 //

@@ -209,6 +209,8 @@ int NTFSfastFind(
     return error;
 }
 
+static AnyFilter* pAnyNamefilters;
+
 // ------------------------------------------------------------------------------------------------
 void AddFileFilter(const wchar_t* argv, NtfsUtil::ReportCfg& reportCfg, bool matchOn)
 {

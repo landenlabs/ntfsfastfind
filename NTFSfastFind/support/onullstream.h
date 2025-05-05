@@ -2,7 +2,7 @@
 //  Null ostream
 //
 // Author:  Dennis Lang   Dec-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //

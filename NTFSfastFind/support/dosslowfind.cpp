@@ -3,7 +3,7 @@
 //
 // Project: NTFSfastFind
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //
@@ -80,7 +80,8 @@ void DirSlowFind::ScanFiles() {
                 LARGE_INTEGER fileSize;
                 fileSize.HighPart = FileData.nFileSizeHigh;
                 fileSize.LowPart = FileData.nFileSizeLow;
-                m_mftRecord.m_attrFilename.n64RealSize = fileSize.QuadPart;
+                m_mftRecord.m_attrFilename.n64DiskSize = fileSize.QuadPart;
+                m_mftRecord.m_attrFilename.n64FileSize = fileSize.QuadPart;
 
                 if (m_reportCfg.readFilter->IsMatch(
                     m_mftRecord.m_attrStandard, m_mftRecord.m_attrFilename, &m_fileInfo)) {

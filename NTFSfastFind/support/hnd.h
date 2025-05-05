@@ -2,7 +2,7 @@
 // Smart file handle class. Close when it goes out of scope.
 //
 // Author:  Dennis Lang   Apr-2011
-// https://lanenlabs.com
+// https://landenlabs.com
 //
 // ----- License ----
 //

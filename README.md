@@ -29,7 +29,7 @@ If you use the -z switch, it will iterate across the directories rather then usi
 <pre>
 NTFS Fast File Find v3.01 - Dec 28 2024
 By: Dennis Lang
-https://lanenlabs.com
+https://landenlabs.com
 
    NTFSfastFind [options] &lt;localNTFSdrivetoSearch>...
  Filter:
