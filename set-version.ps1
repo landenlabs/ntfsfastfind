@@ -26,9 +26,18 @@ param(
     [ValidatePattern('^v?\d+\.\d+(\.\d+(\.\d+)?)?$')]
     [string]$Version,
 
-    [Parameter(Mandatory, Position = 1)]
-    [string]$Message
+    # ValueFromRemainingArguments lets the user pass the message unquoted or
+    # with terminal-mangled quotes (smart quotes etc). All trailing tokens are
+    # joined back into a single string.
+    [Parameter(Mandatory, Position = 1, ValueFromRemainingArguments=$true)]
+    [string[]]$MessageParts
 )
+
+$Message = ($MessageParts -join ' ').Trim()
+if ([string]::IsNullOrWhiteSpace($Message)) {
+    Write-Error "Message is required."
+    exit 1
+}
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -83,8 +92,11 @@ $readmeText = $readmeText -replace '(<!--\s*date\s*-->)[A-Za-z]+\s+\d+\s+\d{4}',
 Write-Host "Updated : README.md                       version=$tag  date=$date"
 
 # --- 3. VERSION file (numeric, no v) ---------------------------------------
+# Use platform-native line ending (CRLF on Windows) so `git add` doesn't emit
+# the "LF will be replaced by CRLF" warning that ErrorActionPreference=Stop
+# would otherwise turn into a fatal error.
 $verFile = Join-Path $root 'VERSION'
-[System.IO.File]::WriteAllText($verFile, "$ver`n")
+[System.IO.File]::WriteAllText($verFile, "$ver$([Environment]::NewLine)")
 Write-Host "Updated : VERSION                         $ver"
 
 # --- 4. NTFSfastFind.rc:  Win32 VERSIONINFO (UTF-16 LE) --------------------
@@ -101,31 +113,31 @@ $rcText = $rcText -replace '(VALUE\s+"LegalCopyright",\s+"Copyright \(C\) )\d+',
 Write-Host "Updated : NTFSfastFind\NTFSfastFind.rc     $winDots  (c) $year"
 
 # --- 5. Commit, tag, push ---------------------------------------------------
+# Helper: run git, surface output, fail only on non-zero exit code.
+# Without `2>&1`, stderr from git (warnings) gets wrapped as a PowerShell
+# ErrorRecord and ErrorActionPreference=Stop kills the script.
+function Invoke-Git {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$GitArgs)
+    & git @GitArgs 2>&1 | ForEach-Object { Write-Host $_ }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error ("git " + ($GitArgs -join ' ') + " failed (exit $LASTEXITCODE)")
+        exit 1
+    }
+}
+
 Write-Host ""
-git add NTFSfastFind/NTFSfastFind.cpp NTFSfastFind/NTFSfastFind.rc README.md VERSION
-if ($LASTEXITCODE -ne 0) { Write-Error "git add failed"; exit 1 }
-
-# Allow pending unrelated changes to be staged too if user wants — but by
-# default we only commit the version-bump files we touched above. To include
-# everything currently modified, uncomment the next line.
-# git add -A
-
-git commit -m "$Message"
-if ($LASTEXITCODE -ne 0) { Write-Error "git commit failed (nothing to commit?)"; exit 1 }
-
-git tag -a $tag -m "$Message"
-if ($LASTEXITCODE -ne 0) { Write-Error "git tag failed"; exit 1 }
+Invoke-Git add NTFSfastFind/NTFSfastFind.cpp NTFSfastFind/NTFSfastFind.rc README.md VERSION
+Invoke-Git commit -m $Message
+Invoke-Git tag -a $tag -m $Message
 
 Write-Host "Tagged  : $tag"
 # Push branch and tag as SEPARATE operations so GitHub delivers two webhook
 # events. With `--follow-tags` (one push), GitHub may coalesce them and skip
 # the tag-triggered workflow run that the release job needs.
 Write-Host "Pushing : branch -> origin"
-git push origin HEAD
-if ($LASTEXITCODE -ne 0) { Write-Error "git push (branch) failed"; exit 1 }
+Invoke-Git push origin HEAD
 Write-Host "Pushing : tag $tag -> origin"
-git push origin $tag
-if ($LASTEXITCODE -ne 0) { Write-Error "git push (tag) failed"; exit 1 }
+Invoke-Git push origin $tag
 
 Write-Host ""
 Write-Host "Done. Pushed $tag - GitHub Actions build + release should now run."
