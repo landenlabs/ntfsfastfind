@@ -117,9 +117,15 @@ git tag -a $tag -m "$Message"
 if ($LASTEXITCODE -ne 0) { Write-Error "git tag failed"; exit 1 }
 
 Write-Host "Tagged  : $tag"
-Write-Host "Pushing : commit + tag -> origin"
-git push origin HEAD --follow-tags
-if ($LASTEXITCODE -ne 0) { Write-Error "git push failed"; exit 1 }
+# Push branch and tag as SEPARATE operations so GitHub delivers two webhook
+# events. With `--follow-tags` (one push), GitHub may coalesce them and skip
+# the tag-triggered workflow run that the release job needs.
+Write-Host "Pushing : branch -> origin"
+git push origin HEAD
+if ($LASTEXITCODE -ne 0) { Write-Error "git push (branch) failed"; exit 1 }
+Write-Host "Pushing : tag $tag -> origin"
+git push origin $tag
+if ($LASTEXITCODE -ne 0) { Write-Error "git push (tag) failed"; exit 1 }
 
 Write-Host ""
 Write-Host "Done. Pushed $tag - GitHub Actions build + release should now run."

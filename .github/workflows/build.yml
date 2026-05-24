@@ -38,7 +38,12 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Run after build on every push; the steps below decide whether to publish
+    # based on whether a v* tag points at HEAD. This way the release happens
+    # whether the workflow was triggered by the tag push or by the branch push
+    # that happens to carry a tagged commit (GitHub may deliver only one of
+    # the two when --follow-tags is used).
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -46,8 +51,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need full history for `git tag --points-at`
+
+      - name: Detect tag at HEAD
+        id: tag
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG=$(git tag --points-at HEAD --list 'v*' | head -n1)
+          fi
+          if [[ -z "$TAG" ]]; then
+            echo "No v* tag at HEAD - skipping release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag: $TAG"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Download Release binaries
+        if: steps.tag.outputs.publish == 'true'
         uses: actions/download-artifact@v4
         with:
           pattern: NTFSfastFind-*-Release
@@ -55,6 +81,7 @@ jobs:
 
       # Rename each exe to include platform so they don't collide in the release.
       - name: Stage release assets
+        if: steps.tag.outputs.publish == 'true'
         run: |
           mkdir -p staged
           cp release-bins/NTFSfastFind-x64-Release/NTFSfastFind.exe   staged/NTFSfastFind-x64.exe
@@ -62,9 +89,10 @@ jobs:
           ls -la staged
 
       - name: Create GitHub Release
+        if: steps.tag.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
           generate_release_notes: true
           files: staged/*.exe
