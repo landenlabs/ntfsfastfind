@@ -2,12 +2,12 @@
 // Program to scan NTFS's Master File Table for matching file by name, date or size filters.
 //
 // Project: NTFSfastFind
-// Author:  Dennis Lang   Apr-2011
+//  Author:  Dennis Lang   May-2026
 // https://landenlabs.com
 //
 // ----- License ----
 //
-// Copyright (c) 2014 Dennis Lang
+// Copyright (c) 2026 Dennis Lang
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,7 +49,7 @@ using namespace WinErrHandlers;
 #include "dosslowfind.h"
 
  
-#define _VERSION "v3.02"
+#define _VERSION "v6.05.23"
 
 char sUsage[] =
     "\n"
