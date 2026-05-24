@@ -6,12 +6,12 @@
 // License:  none
 //
 // Project: NTFSfastFind
-// Author:  Dennis Lang   Apr-2011
+//  Author:  Dennis Lang   May-2026
 // https://landenlabs.com
 //
 // ----- License ----
 //
-// Copyright (c) 2014 Dennis Lang
+// Copyright (c) 2026 Dennis Lang
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -243,21 +243,34 @@ int MFTRecord::ExtractFileOrMFT(
 			break;
 
 		case 0x30: // FILE_NAME
-	        memset(&m_attrFilename, 0, sizeof(MFT_FILEINFO));
+        {
+            // A record can have multiple FILE_NAME attributes (Win32 long, DOS 8.3 short,
+            // POSIX). Prefer non-DOS names so we report long paths, not 8.3 shorts like
+            // PROGRA~1.
             tmpBuffer.clear();
-			nRet = ExtractData(*pNtfsAttr, tmpBuffer, 4096);
-			if (nRet)
-				return nRet;
+            nRet = ExtractData(*pNtfsAttr, tmpBuffer, 4096);
+            if (nRet)
+                return nRet;
 
-            if (tmpBuffer.size() < sizeof(m_attrFilename) - sizeof(m_attrFilename.wFilename))
+            const unsigned fileInfoHdrSz = sizeof(MFT_FILEINFO) - sizeof(m_attrFilename.wFilename);
+            if (tmpBuffer.size() < fileInfoHdrSz)
                 return ReturnError(ERROR_INVALID_PARAMETER);
-            
-            memcpy(&m_attrFilename, &tmpBuffer[0], min(tmpBuffer.size(), sizeof(m_attrFilename)));
-          
-            if (m_attrFilename.chFileNameLength < ARRAYSIZE(m_attrFilename.wFilename))
-                m_attrFilename.wFilename[m_attrFilename.chFileNameLength] = 0;
+
+            const MFT_FILEINFO* pNew = (const MFT_FILEINFO*)&tmpBuffer[0];
+            bool firstName    = (m_nameCnt == 0);
+            bool currentIsDOS = (m_attrFilename.chFileNameType == eDOS);
+            bool newIsDOS     = (pNew->chFileNameType == eDOS);
+
+            if (firstName || (currentIsDOS && !newIsDOS))
+            {
+                memset(&m_attrFilename, 0, sizeof(MFT_FILEINFO));
+                memcpy(&m_attrFilename, &tmpBuffer[0], min(tmpBuffer.size(), sizeof(m_attrFilename)));
+                if (m_attrFilename.chFileNameLength < ARRAYSIZE(m_attrFilename.wFilename))
+                    m_attrFilename.wFilename[m_attrFilename.chFileNameLength] = 0;
+            }
             m_nameCnt++;
-			break;
+            break;
+        }
 
 		case 0x40: // OBJECT_ID
 			break;

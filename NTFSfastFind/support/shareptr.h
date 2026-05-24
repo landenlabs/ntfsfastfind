@@ -1,7 +1,7 @@
 // ------------------------------------------------------------------------------------------------
 // Simple smart pointer to delete shared pointer when last instance goes out of scope.
 //
-// Author:  Dennis Lang   Apr-2011
+//  Author:  Dennis Lang   May-2026
 // https://landenlabs.com
 // ------------------------------------------------------------------------------------------------
 

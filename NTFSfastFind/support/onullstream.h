@@ -1,12 +1,12 @@
 //=================================================================================================
 //  Null ostream
 //
-// Author:  Dennis Lang   Dec-2011
+//  Author:  Dennis Lang   May-2026
 // https://landenlabs.com
 //
 // ----- License ----
 //
-// Copyright (c) 2014 Dennis Lang
+// Copyright (c) 2026 Dennis Lang
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal

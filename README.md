@@ -1,4 +1,4 @@
-NTFSFastFind <!--version-->v6.05.23 - <!--date-->May 23 2026
+NTFSFastFind <!--version-->v6.05.24 - <!--date-->May 23 2026
 ### Windows NTFS Fast File Find
 
 
@@ -27,7 +27,7 @@ If you use the -z switch, it will iterate across the directories rather then usi
 
 ### Help Banner:
 <pre>
-NTFS Fast File Find  <!--version-->v6.05.23 -<!--date-->May 23 2026
+NTFS Fast File Find  <!--version-->v6.05.24 -<!--date-->May 23 2026
 By: Dennis Lang
 https://landenlabs.com
 

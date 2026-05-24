@@ -1,0 +1,70 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Release, Debug]
+        platform: [x64, Win32]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # The vcxproj targets v145 (VS 2026). GitHub-hosted windows-latest runners
+      # ship VS 2022 (v143), so override the toolset on the command line.
+      - name: Build
+        run: msbuild NTFSfastFind.sln -m -nologo -v:minimal -p:Configuration=${{ matrix.configuration }} -p:Platform=${{ matrix.platform }} -p:PlatformToolset=v143
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NTFSfastFind-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: ${{ matrix.platform == 'x64' && format('x64/{0}/NTFSfastFind.exe', matrix.configuration) || format('{0}/NTFSfastFind.exe', matrix.configuration) }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Release binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: NTFSfastFind-*-Release
+          path: release-bins
+
+      # Rename each exe to include platform so they don't collide in the release.
+      - name: Stage release assets
+        run: |
+          mkdir -p staged
+          cp release-bins/NTFSfastFind-x64-Release/NTFSfastFind.exe   staged/NTFSfastFind-x64.exe
+          cp release-bins/NTFSfastFind-Win32-Release/NTFSfastFind.exe staged/NTFSfastFind-Win32.exe
+          ls -la staged
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: staged/*.exe

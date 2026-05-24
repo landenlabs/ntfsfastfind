@@ -6,6 +6,9 @@
 /*/project.xcworkspace/
 /*/xcuserdata/
 *.xcuserstate
+x64/
+Release/
+*/Release/
 
 # Windows VisualStudio
 .ipch/

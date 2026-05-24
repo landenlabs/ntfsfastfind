@@ -49,7 +49,7 @@ using namespace WinErrHandlers;
 #include "dosslowfind.h"
 
  
-#define _VERSION "v6.05.23"
+#define _VERSION "v6.05.24"
 
 char sUsage[] =
     "\n"
